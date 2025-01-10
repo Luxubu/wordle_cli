@@ -59,6 +59,7 @@ fn main() {
     println!("Welcome to Wordle CLI! You have 6 tries.");
     let mut attempts = 0;
     let mut previous_attempt: Option<String> = None;
+    let mut keyboard_status = HashMap::new();
 
     while attempts < 6 {
         print!("Attempt {} - Enter a 5-letter word: ", attempts + 1);
@@ -101,6 +102,7 @@ fn main() {
                 result[i] = 'G';
                 *solution_char_count.get_mut(&c).unwrap() -= 1;
                 *guess_char_count.get_mut(&c).unwrap() -= 1;
+                keyboard_status.insert(c, 'G');
             }
         }
 
@@ -110,8 +112,14 @@ fn main() {
                 if solution.contains(c) && *solution_char_count.get(&c).unwrap() > 0 {
                     result[i] = 'Y';
                     *solution_char_count.get_mut(&c).unwrap() -= 1;
+                    if keyboard_status.get(&c) != Some(&'G') {
+                        keyboard_status.insert(c, 'Y');
+                    }
                 } else {
                     result[i] = 'X';
+                    if keyboard_status.get(&c) != Some(&'G') && keyboard_status.get(&c) != Some(&'Y') {
+                        keyboard_status.insert(c, 'X');
+                    }
                 }
             }
         }
@@ -129,6 +137,30 @@ fn main() {
 
         previous_attempt = Some(guess.clone());
         attempts += 1;
+
+        // Print the keyboard layout
+        print_keyboard(&keyboard_status);
     }
     println!("Sorry, you're out of attempts. The solution was: {}", solution);
+}
+
+fn print_keyboard(keyboard_status: &HashMap<char, char>) {
+    let keyboard = [
+        "qwertyuiop",
+        "asdfghjkl",
+        "zxcvbnm"
+    ];
+
+    for row in keyboard.iter() {
+        for c in row.chars() {
+            match keyboard_status.get(&c) {
+                Some('G') => print!("\x1b[32m{}\x1b[0m ", c),
+                Some('Y') => print!("\x1b[33m{}\x1b[0m ", c),
+                Some('X') => print!("\x1b[90m{}\x1b[0m ", c),
+                _ => print!("{} ", c),
+            }
+        }
+        println!();
+    }
+    println!();
 }
